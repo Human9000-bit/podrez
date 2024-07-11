@@ -1,6 +1,7 @@
 #![windows_subsystem = "windows"] // скрывает окно консоли только на винде, todo на линукс надо бы
 use rand::Rng;
-use std::{fs::ReadDir, io::BufReader, path::Path, thread, time::Duration};
+use std::{fs::ReadDir, path::Path, thread, time::Duration};
+use rusty_audio::prelude::*;
 
 fn main() {
     thread::sleep(Duration::from_secs(20*60)); //спим 20 минут чтобы она не сразу орала
@@ -34,33 +35,11 @@ fn main() {
         println!("{:?}", filesarr);
         // let mut rngl = rand::thread_rng();
         let num = rngl.gen_range(0..filesarr.len());
-        match play_mp3(filesarr[num].clone()) {
-            Ok(_) => println!("звук проигран"),
-            Err(e) => println!("звук не проигран: {:?}", e),
-        }
+        play(filesarr[num].clone())
     }
 }
-//спиздил из другово своего проекта функцию, которая играет mp3 файлы
-fn play_mp3(path: String) -> Result<Vec<u8>, Vec<u8>> {
-    let (_stream, handle) = match rodio::OutputStream::try_default() {
-        Ok((result, han)) => (result, han),
-        Err(x) => return Err(x.to_string().as_bytes().to_vec()),
-    };
-    let sink = match rodio::Sink::try_new(&handle) {
-        Ok(result) => result,
-        Err(x) => return Err(x.to_string().as_bytes().to_vec()),
-    };
 
-    let file = match std::fs::File::open(path) {
-        Ok(result) => result,
-        Err(x) => return Err(x.to_string().as_bytes().to_vec()),
-    };
-
-    sink.append(match rodio::Decoder::new(BufReader::new(file)) {
-        Ok(result) => result,
-        Err(x) => return Err(x.to_string().as_bytes().to_vec()),
-    });
-
-    sink.sleep_until_end();
-    Ok("play_mp3 succes".as_bytes().to_vec())
+fn play(path: String) {
+    let mut audio = Audio::new();
+    audio.add("sound", path)
 }
