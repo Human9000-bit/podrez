@@ -4,8 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+dirs = "5.0.1"
 rand = "0.8.5"
 rusty_audio = "1.4.1"
+ureq = "2.10.0"
 
 [profile.release]
 lto = true
