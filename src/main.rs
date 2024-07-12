@@ -41,5 +41,6 @@ fn main() {
 
 fn play(path: String) {
     let mut audio = Audio::new();
-    audio.add("sound", path)
+    audio.add("sound", path);
+    audio.play("sound")
 }

@@ -518,7 +518,6 @@ name = "podrez"
 version = "0.1.0"
 dependencies = [
  "rand",
- "rodio 0.19.0",
  "rusty_audio",
 ]
 
@@ -628,20 +627,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rodio"
-version = "0.19.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6006a627c1a38d37f3d3a85c6575418cfe34a5392d60a686d0071e1c8d427acb"
-dependencies = [
- "claxon",
- "cpal",
- "hound",
- "lewton",
- "symphonia",
- "thiserror",
-]
-
-[[package]]
 name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -653,7 +638,7 @@ version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e312a651ea9ffaf466339a038e6fc49f8ebd3094588174351511207dac6050d1"
 dependencies = [
- "rodio 0.17.3",
+ "rodio",
 ]
 
 [[package]]
