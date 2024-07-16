@@ -2,9 +2,11 @@
 name = "podrez"
 version = "0.1.0"
 edition = "2021"
+authors = ["human9000 human9000.2021@gmail.com"]
 
 [dependencies]
 dirs = "5.0.1"
+json = "0.12.4"
 rand = "0.8.5"
 rusty_audio = "1.4.1"
 
@@ -14,3 +16,4 @@ opt-level = "z"
 debug = 0
 codegen-units = 1
 strip = true
+panic = "unwind"
