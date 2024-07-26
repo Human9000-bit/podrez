@@ -1,17 +1,19 @@
-use std::{fs::{DirBuilder, ReadDir}, io::{Read, Write}, net::TcpStream, path::{PathBuf, Path}};
+use std::{fs::{DirBuilder, File, ReadDir}, io::{Read, Write}, net::TcpStream, path::{Path, PathBuf}, sync::Arc};
+
+use serde_json::{Value};
+use serde::{Deserialize, Serialize};
 
 pub fn path_handler(path: &PathBuf) -> Option<ReadDir> {
     if !path.exists() {
         DirBuilder::new() // if folder doesnt exist create .sounds dir and download sounds into it
             .recursive(true)
-            .create(path).unwrap();
-        
+            .create(path).unwrap();        
         download_files(path)
     }
     let iter = match path.read_dir() {
         Ok(iter) => iter,
         Err(_) => {
-            println!("нельзя получить данные о папке");
+            println!("cannot read directory");
             return None;
         }
     };
@@ -23,12 +25,12 @@ pub fn download_files(path: &Path) { //downloads json file with list of urls
     let urls = parse_index(resp);
     
     for i in urls { //iterates over array or urls, download file from every url and write it.
-        let resp = get(i);
+        let resp = get(i.as_str());
         let parts: Vec<&str> = i.split('/').collect();
-        let name = parts.last();
+        let name = parts.last().unwrap().to_owned();
         drop(parts);
-        
-        write_file
+
+        write_file(path.to_path_buf(), name, resp)
     }
 }
 
@@ -48,13 +50,31 @@ pub fn get(url: &str) -> String { // GET request using std::net
     response
 }
 
-pub fn parse_index(index: String) -> Vec<&'static str> { //parses json file and returns an array of urls
-    let str: &str = &index;
-    let parsed = json::parse(str);
-    
-    parsed.unwrap();
+pub fn parse_index(index: String) -> Vec<String> { //parses json file and returns an array of urls
+    let parsed: JsonFromWeb = serde_json::from_str(index.as_str()).unwrap();
+    parsed.urls
 }
 
-fn write_file(path: PathBuf, filename: &str) {
+/// creates a file with name filename in path and write contents into it
+fn write_file(path: PathBuf, filename: &str, contents: String) {
+    let mut file = File::create(path.join(filename)).unwrap();
+    file.write_all(contents.as_bytes());
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
     
+    #[test]
+    fn test_json() {
+        let index = String::from("{\"urls\": [\"http://mipoh.ru/\"]}");
+        let parsed = parse_index(index);
+        println!("{:?}", &parsed);
+        // assert_eq!(["http://mipoh.ru/"], parsed);
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+struct JsonFromWeb { // this json should contain urls list
+    urls: Vec<String>
 }
