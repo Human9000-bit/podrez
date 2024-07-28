@@ -3,6 +3,7 @@ name = "podrez"
 version = "0.1.0"
 edition = "2021"
 authors = ["human9000 human9000.2021@gmail.com"]
+license-file = "LICENSE"
 
 [dependencies]
 dirs = "5.0.1"

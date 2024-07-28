@@ -8,12 +8,13 @@ use dirs::home_dir;
 
 fn main() {
     thread::sleep(Duration::from_secs(20*60)); //sleeps for 20 mins
+    
     loop {
         let mut rngl = rand::thread_rng();
         thread::sleep(Duration::new(rngl.gen_range(15 * 60..35 * 60), 0)); //sleeps randomly from 15 to 35 mins
         let mut filesarr = Vec::new();
         
-        let path = home_dir().unwrap().join(".sounds"); // the path of sounds dir. used dir crate because of diiferenco of home dr in unix and windows
+        let path = home_dir().unwrap().join(".sounds"); // the path of sounds dir. used dir crate because of diiference of home dir in unix and windows
         
         let iter = match path_handler(&path) {
             Some(value) => value,
