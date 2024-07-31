@@ -25,9 +25,9 @@ pub fn path_handler(path: &PathBuf) -> Option<ReadDir> {
     Some(iter)
 }
 
-pub fn download_files(path: &Path) {
+fn download_files(path: &Path) {
     //downloads json file with list of urls
-    let resp = get("SITE_URL");
+    let resp = get("");
     let urls = parse_index(resp);
 
     for i in urls {
