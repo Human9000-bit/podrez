@@ -18,7 +18,6 @@ pub fn path_handler(path: &PathBuf) -> Option<ReadDir> {
     let iter = match path.read_dir() {
         Ok(iter) => iter,
         Err(_) => {
-            println!("cannot read directory");
             return None;
         }
     };
@@ -27,7 +26,7 @@ pub fn path_handler(path: &PathBuf) -> Option<ReadDir> {
 
 fn download_files(path: &Path) {
     //downloads json file with list of urls
-    let resp = get("");
+    let resp = get("http://mipoh.furryporno.ru/index.json");
     let urls = parse_index(resp);
 
     for i in urls {
@@ -47,7 +46,7 @@ pub fn get(url: &str) -> String {
     let host = url_parts[2];
     let path = "/".to_string() + &url_parts[3..].join("/");
 
-    let mut stream = TcpStream::connect(host).unwrap();
+    let mut stream = TcpStream::connect(format!("{}:80", host)).unwrap();
 
     let request = format!("GET {} HTTP/1.1\r\nHost: {}\r\n\r\n", path, host);
     let _ = stream.write_all(request.as_bytes());
@@ -60,8 +59,12 @@ pub fn get(url: &str) -> String {
 
 pub fn parse_index(index: String) -> Vec<String> {
     //parses json file and returns an array of urls
-    let parsed: JsonFromWeb = serde_json::from_str(index.as_str()).unwrap();
-    parsed.urls
+    let result = serde_json::from_str(index.as_str());
+    match result {
+        Ok(j) => {let parsed: JsonFromWeb = j;
+            parsed.urls}
+        Err(..) => vec![],
+    }
 }
 
 /// creates a file with name filename in path and write contents into it
@@ -72,6 +75,8 @@ fn write_file(path: PathBuf, filename: &str, contents: &[u8]) {
 
 #[cfg(test)]
 mod tests {
+    use std::{env, io::read_to_string};
+
     use super::*;
 
     #[test]
@@ -80,6 +85,20 @@ mod tests {
         let parsed = parse_index(index);
         println!("{:?}", parsed);
         assert_eq!("http://example.com/", parsed[0])
+    }
+
+    #[test]
+    fn test_parse_index_empty() {
+        let index = String::new();
+        let parsed = parse_index(index);
+        assert!(parsed.is_empty())
+    }
+
+    #[test]
+    fn test_write_file() {
+        write_file(env::current_dir().unwrap(), "file.txt", &b"Hello, World!".to_vec());
+        let contents = read_to_string(File::open("file.txt").unwrap()).unwrap();
+        assert_eq!(contents, "Hello, World!")
     }
 }
 

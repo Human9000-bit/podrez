@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 mod downloader;
 
 use downloader::path_handler;
@@ -11,7 +13,7 @@ fn main() {
    
     let iter = match path_handler(&path) {
         Some(value) => value,
-        None => panic!(),
+        None => panic!("failed to read dir"),
     };
     
     //iterating over all files in directory and picking a random sound
