@@ -1,5 +1,5 @@
 use std::{
-    fs::{DirBuilder, File, ReadDir},
+    fs::{self, DirBuilder, File, ReadDir},
     io::{Read, Write},
     net::TcpStream,
     path::{Path, PathBuf},
@@ -9,10 +9,7 @@ use serde::{Deserialize, Serialize};
 
 pub fn path_handler(path: &PathBuf) -> Option<ReadDir> {
     if !path.exists() {
-        DirBuilder::new() // if folder doesnt exist create .sounds dir and download sounds into it
-            .recursive(true)
-            .create(path)
-            .unwrap();
+        fs::create_dir(path).expect("failed to crate dir");
         download_files(path)
     }
     let iter = match path.read_dir() {
@@ -25,8 +22,10 @@ pub fn path_handler(path: &PathBuf) -> Option<ReadDir> {
 }
 
 fn download_files(path: &Path) {
+    let mut url = String::new();
+    File::open("config").unwrap().read_to_string(&mut url).unwrap();
     //downloads json file with list of urls
-    let resp = get("http://mipoh.furryporno.ru/index.json");
+    let resp = get(url.as_str());
     let urls = parse_index(resp);
 
     for i in urls {
@@ -96,7 +95,7 @@ mod tests {
 
     #[test]
     fn test_write_file() {
-        write_file(env::current_dir().unwrap(), "file.txt", &b"Hello, World!".to_vec());
+        write_file(env::current_dir().unwrap(), "file.txt", b"Hello, World!".as_slice());
         let contents = read_to_string(File::open("file.txt").unwrap()).unwrap();
         assert_eq!(contents, "Hello, World!")
     }

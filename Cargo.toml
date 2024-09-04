@@ -6,12 +6,13 @@ authors = ["human9000 human9000.2021@gmail.com"]
 license-file = "LICENSE"
 
 [dependencies]
-ctrlc = "3.4.4"
-dirs = "5.0.1"
 rand = "0.8.5"
 rusty_audio = "1.4.1"
 serde = { version = "1.0.204", features = ["derive"] }
 serde_json = "1.0.120"
+
+[profile.dev]
+panic = "unwind"
 
 [profile.release]
 lto = true

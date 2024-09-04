@@ -4,15 +4,11 @@ mod downloader;
 
 use downloader::path_handler;
 use rand::Rng;
-use std::{fs::{self, ReadDir}, thread, time::Duration};
+use std::{fs::ReadDir, thread, time::Duration};
 use rusty_audio::prelude::*;
-use dirs::home_dir;
 
 fn main() {
-    let path = home_dir().unwrap().join(".sounds"); // the path of sounds dir. used dir crate because of diiference of home dir in unix and windows
-    
-    ctrlc::set_handler(|| {fs::remove_dir_all(home_dir().unwrap().join(".sounds")).unwrap()}).expect("failed to set up ctrlc handler");
-    
+    let path = std::env::temp_dir().join(".sounds"); // the path of sounds dir.
     let iter = match path_handler(&path) {
         Some(value) => value,
         None => panic!("failed to read dir"),
