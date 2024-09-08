@@ -1,9 +1,10 @@
 use std::{
-    fs::{self, DirBuilder, File, ReadDir},
+    fs::{self, File, ReadDir},
     io::{Read, Write},
-    net::TcpStream,
     path::{Path, PathBuf},
 };
+
+use smolhttp::get;
 
 use serde::{Deserialize, Serialize};
 
@@ -25,7 +26,7 @@ fn download_files(path: &Path) {
     let mut url = String::new();
     File::open("config").unwrap().read_to_string(&mut url).unwrap();
     //downloads json file with list of urls
-    let resp = get(url.as_str());
+    let resp = get(url.as_str()).unwrap().text();
     let urls = parse_index(resp);
 
     for i in urls {
@@ -35,25 +36,8 @@ fn download_files(path: &Path) {
         let name = parts.last().unwrap().to_owned();
         drop(parts);
 
-        write_file(path.to_path_buf(), name, resp.as_bytes())
+        write_file(path.to_path_buf(), name, resp.unwrap().content().as_slice())
     }
-}
-
-pub fn get(url: &str) -> String {
-    // GET request using std::net
-    let url_parts: Vec<&str> = url.split('/').collect();
-    let host = url_parts[2];
-    let path = "/".to_string() + &url_parts[3..].join("/");
-
-    let mut stream = TcpStream::connect(format!("{}:80", host)).unwrap();
-
-    let request = format!("GET {} HTTP/1.1\r\nHost: {}\r\n\r\n", path, host);
-    let _ = stream.write_all(request.as_bytes());
-
-    let mut response = String::new();
-    let _ = stream.read_to_string(&mut response);
-
-    response
 }
 
 pub fn parse_index(index: String) -> Vec<String> {
