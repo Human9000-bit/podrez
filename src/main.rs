@@ -5,15 +5,14 @@ mod downloader;
 
 use downloader::path_handler;
 use rand::Rng;
-use std::{fs::ReadDir, thread, time::Duration};
+use std::{env, fs::ReadDir, thread, time::Duration};
 use rusty_audio::prelude::*;
 
 fn main() {
-    let path = std::env::temp_dir().join(".sounds"); // the path of sounds dir.
-    let iter = match path_handler(&path) {
-        Some(value) => value,
-        None => panic!("failed to read dir"),
-    };
+    let path = env::temp_dir().join(".sounds"); // the path of sounds dir.
+    let url = env!("URL", "no url provided");
+    
+    let iter = path_handler(&path, url);
     
     //iterating over all files in directory and picking a random sound
     let files = ReadDir::into_iter(iter);
@@ -28,11 +27,11 @@ fn main() {
         filesarr.push(path);
     }
     
-    thread::sleep(Duration::from_secs(20*60)); //sleeps for 20 mins
+    thread::sleep(Duration::from_secs(20 * 60)); //sleeps for 20 mins
     
     loop {
         let mut rngl = rand::thread_rng();
-        thread::sleep(Duration::new(rngl.gen_range(15 * 60..35 * 60), 0)); //sleeps randomly from 15 to 35 mins
+        thread::sleep(Duration::new(rngl.gen_range((15 * 60)..(35 * 60)), 0)); //sleeps randomly from 15 to 35 mins
 
         println!("{:?}", filesarr);
         let num = rngl.gen_range(0..filesarr.len()); //random index
@@ -40,7 +39,8 @@ fn main() {
     }
 }
 
-fn play(path: &String) { //plays the very sound
+/// Plays sound from path
+fn play(path: &String) {
     let mut audio = Audio::new();
     audio.add("sound", path);
     audio.play("sound");

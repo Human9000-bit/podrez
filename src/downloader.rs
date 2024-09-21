@@ -1,47 +1,46 @@
 use std::{
     fs::{self, File, ReadDir},
-    io::{Read, Write},
+    io::Write,
     path::{Path, PathBuf},
 };
-
 use smolhttp::get;
-
 use serde::{Deserialize, Serialize};
 
-pub fn path_handler(path: &PathBuf) -> Option<ReadDir> {
+/// Hadles provided path. Returns ReadDir iter if success.
+///
+/// # Panics
+///
+/// Panics if there is no files in dir
+pub fn path_handler(path: &PathBuf, url: &str) -> ReadDir {
     if !path.exists() {
         fs::create_dir(path).expect("failed to crate dir");
-        download_files(path)
+        download_files(path, url)
     }
-    let iter = match path.read_dir() {
+    
+    match path.read_dir() {
         Ok(iter) => iter,
-        Err(_) => {
-            return None;
-        }
-    };
-    Some(iter)
+        Err(e) => panic!("{:?}", e)
+    }
 }
 
-fn download_files(path: &Path) {
-    let mut url = String::new();
-    File::open("config").unwrap().read_to_string(&mut url).unwrap();
-    //downloads json file with list of urls
-    let resp = get(url.as_str()).unwrap().text();
+/// Parses json from response of url, then download and write files from all urls in json
+fn download_files(path: &Path, url: &str) {
+    let resp = get(url).unwrap().text();
     let urls = parse_index(resp);
 
+    //iterates over array or urls, download file from every url and write it.
     for i in urls {
-        //iterates over array or urls, download file from every url and write it.
-        let resp = get(i.as_str());
+        let resp = get(i.as_str()).unwrap();
+        println!("{:?}", &resp);
         let parts: Vec<&str> = i.split('/').collect();
         let name = parts.last().unwrap().to_owned();
-        drop(parts);
 
-        write_file(path.to_path_buf(), name, resp.unwrap().content().as_slice())
+        write_file(path.to_path_buf(), name, resp.content().as_slice())
     }
 }
 
+/// Parses json file and returns an array of urls
 pub fn parse_index(index: String) -> Vec<String> {
-    //parses json file and returns an array of urls
     let result = serde_json::from_str(index.as_str());
     match result {
         Ok(j) => {let parsed: JsonFromWeb = j;
@@ -83,10 +82,16 @@ mod tests {
         let contents = read_to_string(File::open("file.txt").unwrap()).unwrap();
         assert_eq!(contents, "Hello, World!")
     }
+    
+    // #[test]
+    // fn test_get() {
+    //     let resp = get("https://mipoh.furryporno.ru/bass.mp3").unwrap().content();
+    //     assert_eq!(resp.as_slice(), [10])
+    // }
 }
 
+/// Structure of the json. Must contain only array of url strings, or panics otherwise.
 #[derive(Deserialize, Serialize)]
 struct JsonFromWeb {
-    // this json should contain urls list
     urls: Vec<String>,
 }
