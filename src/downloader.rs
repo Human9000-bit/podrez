@@ -1,15 +1,11 @@
 use std::{
-    fs::{self, File, ReadDir},
-    io::Write,
-    path::{Path, PathBuf},
-};
-use smolhttp::get;
+    fs::{self, write, ReadDir},
+    path::{Path, PathBuf},};
+use ureq::get;
 use serde::{Deserialize, Serialize};
 
 /// Hadles provided path. Returns ReadDir iter if success.
-///
-/// # Panics
-///
+/// 
 /// Panics if there is no files in dir
 pub fn path_handler(path: &PathBuf, url: &str) -> ReadDir {
     if !path.exists() {
@@ -25,17 +21,18 @@ pub fn path_handler(path: &PathBuf, url: &str) -> ReadDir {
 
 /// Parses json from response of url, then download and write files from all urls in json
 fn download_files(path: &Path, url: &str) {
-    let resp = get(url).unwrap().text();
+    let resp = get(url).call().expect("failed to download json").into_string().unwrap();
+    println!("{:?}", resp);
     let urls = parse_index(resp);
 
     //iterates over array or urls, download file from every url and write it.
-    for i in urls {
-        let resp = get(i.as_str()).unwrap();
-        println!("{:?}", &resp);
+    for i in urls.as_slice() {
+        let mut resp = Vec::new();
+        get(i.as_str()).call().expect("failed to download mp3").into_reader().read_to_end(&mut resp).expect("failed to convert");
         let parts: Vec<&str> = i.split('/').collect();
-        let name = parts.last().unwrap().to_owned();
+        let name = parts.last().unwrap();
 
-        write_file(path.to_path_buf(), name, resp.content().as_slice())
+        write_file(path.to_path_buf(), name, resp.as_slice())
     }
 }
 
@@ -51,8 +48,7 @@ pub fn parse_index(index: String) -> Vec<String> {
 
 /// creates a file with name filename in path and write contents into it
 fn write_file(path: PathBuf, filename: &str, contents: &[u8]) {
-    let mut file = File::create(path.join(filename)).unwrap();
-    let _ = file.write_all(contents);
+    let _ = write(path.join(filename), contents);
 }
 
 #[cfg(test)]
@@ -61,6 +57,7 @@ mod tests {
 
     use super::*;
 
+    /// Test that parses example.com from index
     #[test]
     fn test_json() {
         let index = String::from("{\"urls\": [\"http://example.com/\"]}");
@@ -69,6 +66,7 @@ mod tests {
         assert_eq!("http://example.com/", parsed[0])
     }
 
+    /// Test that parses empty string
     #[test]
     fn test_parse_index_empty() {
         let index = String::new();
@@ -76,18 +74,15 @@ mod tests {
         assert!(parsed.is_empty())
     }
 
+    /// Test that writes file and reads it
+    /// 
+    /// Panics if failed to read or incorrect string read
     #[test]
     fn test_write_file() {
         write_file(env::current_dir().unwrap(), "file.txt", b"Hello, World!".as_slice());
-        let contents = read_to_string(File::open("file.txt").unwrap()).unwrap();
+        let contents = read_to_string(std::fs::File::open("file.txt").unwrap()).unwrap();
         assert_eq!(contents, "Hello, World!")
     }
-    
-    // #[test]
-    // fn test_get() {
-    //     let resp = get("https://mipoh.furryporno.ru/bass.mp3").unwrap().content();
-    //     assert_eq!(resp.as_slice(), [10])
-    // }
 }
 
 /// Structure of the json. Must contain only array of url strings, or panics otherwise.
