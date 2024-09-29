@@ -1,8 +1,9 @@
 use std::{
-    fs::{self, write, ReadDir},
-    path::{Path, PathBuf},};
+    env, fs::{self, write, ReadDir}, path::{Path, PathBuf}};
 use ureq::get;
 use serde::{Deserialize, Serialize};
+
+use crate::stop_and_clear;
 
 /// Hadles provided path. Returns ReadDir iter if success.
 /// 
@@ -21,7 +22,9 @@ pub fn path_handler(path: &PathBuf, url: &str) -> ReadDir {
 
 /// Parses json from response of url, then download and write files from all urls in json
 fn download_files(path: &Path, url: &str) {
-    let resp = get(url).call().expect("failed to download json").into_string().unwrap();
+    let resp = get(url).call().inspect_err(|_e| stop_and_clear(env::temp_dir().join(".sounds")));
+    
+    let resp = resp.unwrap().into_string().unwrap();
     println!("{:?}", resp);
     let urls = parse_index(resp);
 
