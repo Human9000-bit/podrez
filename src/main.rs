@@ -41,8 +41,8 @@ fn main() {
 /// Plays sound from path
 fn play(path: &String) {
     let mut audio = Audio::new();
-    audio.add("sound", path);
-    audio.play("sound");
+    audio.add(path, path);
+    audio.play(path);
     audio.wait()
 }
 

@@ -25,7 +25,6 @@ fn download_files(path: &Path, url: &str) {
     let resp = get(url).call().inspect_err(|_e| stop_and_clear(env::temp_dir().join(".sounds")));
     
     let resp = resp.unwrap().into_string().unwrap();
-    println!("{:?}", resp);
     let urls = parse_index(resp);
 
     //iterates over array or urls, download file from every url and write it.
@@ -45,7 +44,7 @@ pub fn parse_index(index: String) -> Vec<String> {
     match result {
         Ok(j) => {let parsed: JsonFromWeb = j;
             parsed.urls}
-        Err(..) => vec![],
+        Err(_) => vec![],
     }
 }
 
