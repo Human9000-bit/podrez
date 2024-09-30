@@ -25,11 +25,11 @@ fn main() {
         filesarr.push(path);
     }
     
-    //thread::sleep(Duration::from_secs(20 * 60)); //sleeps for 20 mins
+    thread::sleep(Duration::from_secs(20 * 60)); //sleeps for 20 mins
     
     loop {
         let mut rngl = rand::thread_rng();
-        //thread::sleep(Duration::new(rngl.gen_range((15 * 60)..(35 * 60)), 0)); //sleeps randomly from 15 to 35 mins
+        thread::sleep(Duration::new(rngl.gen_range((15 * 60)..(35 * 60)), 0)); //sleeps randomly from 15 to 35 mins
 
         println!("{:?}", filesarr);
         let num = rngl.gen_range(0..filesarr.len()); //random index
