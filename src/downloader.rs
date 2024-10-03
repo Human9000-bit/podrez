@@ -96,7 +96,8 @@ struct JsonFromWeb {
 }
 
 pub struct Config {
-    pub cooldown: u64,
+    pub min_cooldown: u64,
+    pub max_cooldown: u64,
     pub volume: f64
 }
 
@@ -107,7 +108,8 @@ impl Config {
             .unwrap().into_string().inspect_err(|_e| stop_and_clear(&path)).unwrap();
         let json: Value = serde_json::from_str(&resp).unwrap();
         Self {
-            cooldown: json["cooldown"].as_i64().unwrap_or(10) as u64,
+            min_cooldown: json["min_cooldown"].as_i64().unwrap_or(6) as u64,
+            max_cooldown: json["max_cooldown"].as_i64().unwrap_or(20) as u64,
             volume: json["volume"].as_f64().unwrap_or(1.0)
         }
     }

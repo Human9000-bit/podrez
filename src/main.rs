@@ -11,11 +11,10 @@ use awedio::Sound;
 fn main() {
     let path = env::temp_dir().join(".sounds/"); // the path of sounds dir.
     let _ = ctrlc::set_handler(|| {stop_and_clear(&env::temp_dir().join(".sounds"));});
+    let _ = fs::remove_dir_all(&path);
     let url = env!("URL", "no url provided");
     let config = downloader::Config::from(&format!("{url}/config.json"));
     let url = &format!("{url}/index.json");
-    
-    thread::sleep(Duration::from_secs(config.cooldown * 60)); //sleeps for 20 mins
     
     loop {
         let iter = path_handler(&path, url);
@@ -31,7 +30,7 @@ fn main() {
         }
         
         let mut rngl = rand::thread_rng();
-        thread::sleep(Duration::new(rngl.gen_range((config.cooldown * 60)..(config.cooldown * 60)), 0)); //sleeps randomly from 15 to 35 mins
+        thread::sleep(Duration::new(rngl.gen_range((config.min_cooldown)..(config.max_cooldown * 60)), 0)); //sleeps randomly from 15 to 35 mins
 
         println!("{:?}", filesarr);
         let num = rngl.gen_range(0..filesarr.len()); //random index
