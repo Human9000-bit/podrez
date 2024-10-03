@@ -1,5 +1,6 @@
 use std::{
     env, fs::{self, write, ReadDir}, path::{Path, PathBuf}};
+use serde_json::Value;
 use ureq::get;
 use serde::{Deserialize, Serialize};
 
@@ -9,10 +10,11 @@ use crate::stop_and_clear;
 /// 
 /// Panics if there is no files in dir
 pub fn path_handler(path: &PathBuf, url: &str) -> ReadDir {
-    if !path.exists() {
-        fs::create_dir(path).expect("failed to crate dir");
+    if !path.exists() || path.read_dir().unwrap().count() == 0 {
+        println!("no files in dir, downloading...");
+        let _ = fs::create_dir(path);
         download_files(path, url)
-    }
+    } else {println!("found mp3s in dir")}
     
     match path.read_dir() {
         Ok(iter) => iter,
@@ -22,7 +24,7 @@ pub fn path_handler(path: &PathBuf, url: &str) -> ReadDir {
 
 /// Parses json from response of url, then download and write files from all urls in json
 fn download_files(path: &Path, url: &str) {
-    let resp = get(url).call().inspect_err(|_e| stop_and_clear(env::temp_dir().join(".sounds")));
+    let resp = get(url).call().inspect_err(|_e| stop_and_clear(&env::temp_dir().join(".sounds")));
     
     let resp = resp.unwrap().into_string().unwrap();
     let urls = parse_index(resp);
@@ -91,4 +93,22 @@ mod tests {
 #[derive(Deserialize, Serialize)]
 struct JsonFromWeb {
     urls: Vec<String>,
+}
+
+pub struct Config {
+    pub cooldown: u64,
+    pub volume: f64
+}
+
+impl Config {
+    pub fn from(url: &str) -> Self {
+        let path = env::temp_dir().join(".sounds");
+        let resp = get(url).call().inspect_err(|_e| stop_and_clear(&path))
+            .unwrap().into_string().inspect_err(|_e| stop_and_clear(&path)).unwrap();
+        let json: Value = serde_json::from_str(&resp).unwrap();
+        Self {
+            cooldown: json["cooldown"].as_i64().unwrap_or(10) as u64,
+            volume: json["volume"].as_f64().unwrap_or(1.0)
+        }
+    }
 }
