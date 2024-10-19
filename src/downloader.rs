@@ -1,5 +1,6 @@
 use std::{
     env, fs::{self, write, ReadDir}, path::{Path, PathBuf}};
+use futures::future::join_all;
 use serde_json::Value;
 use ureq::get;
 use serde::{Deserialize, Serialize};
@@ -9,11 +10,11 @@ use crate::stop_and_clear;
 /// Hadles provided path. Returns ReadDir iter if success.
 /// 
 /// Panics if there is no files in dir
-pub fn path_handler(path: &PathBuf, url: &str) -> ReadDir {
+pub async fn path_handler(path: &PathBuf, url: &str) -> ReadDir {
     if !path.exists() || path.read_dir().unwrap().count() == 0 {
         println!("no files in dir, downloading...");
         let _ = fs::create_dir(path);
-        download_files(path, url)
+        download_files(path, url).await
     } else {println!("found mp3s in dir")}
     
     match path.read_dir() {
@@ -23,21 +24,27 @@ pub fn path_handler(path: &PathBuf, url: &str) -> ReadDir {
 }
 
 /// Parses json from response of url, then download and write files from all urls in json
-fn download_files(path: &Path, url: &str) {
+async fn download_files(path: &Path, url: &str) {
     let resp = get(url).call().inspect_err(|_e| stop_and_clear(&env::temp_dir().join(".sounds")));
     
     let resp = resp.unwrap().into_string().unwrap();
     let urls = parse_index(resp);
 
     //iterates over array or urls, download file from every url and write it.
+    let mut hadles = vec![];
     for i in urls.as_slice() {
-        let mut resp = Vec::new();
-        get(i.as_str()).call().expect("failed to download mp3").into_reader().read_to_end(&mut resp).expect("failed to convert");
-        let parts: Vec<&str> = i.split('/').collect();
-        let name = parts.last().unwrap();
-
-        write_file(path.to_path_buf(), name, resp.as_slice())
+        hadles.push(download_and_write(i, path))
     }
+    join_all(hadles).await;
+}
+
+async fn download_and_write(i: &str, path: &Path) {
+    let mut resp = Vec::new();
+    get(i).call().expect("failed to download mp3").into_reader().read_to_end(&mut resp).expect("failed to convert");
+    let parts: Vec<&str> = i.split('/').collect();
+    let name = parts.last().unwrap();
+
+    write_file(path.to_path_buf(), name, resp.as_slice())
 }
 
 /// Parses json file and returns an array of urls

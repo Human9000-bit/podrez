@@ -8,7 +8,8 @@ use rand::Rng;
 use std::{env, fs::{self, ReadDir}, path::PathBuf, thread, time::Duration};
 use awedio::Sound;
 
-fn main() {
+#[smol_potat::main]
+async fn main() {
     let path = env::temp_dir().join(".sounds/"); // the path of sounds dir.
     let _ = ctrlc::set_handler(|| {stop_and_clear(&env::temp_dir().join(".sounds"));});
     let _ = fs::remove_dir_all(&path);
@@ -17,7 +18,7 @@ fn main() {
     let url = &format!("{url}/index.json");
     
     loop {
-        let iter = path_handler(&path, url);
+        let iter = path_handler(&path, url).await;
         
         //iterating over all files in directory and picking a random sound
         let files = ReadDir::into_iter(iter);
@@ -41,12 +42,14 @@ fn main() {
 /// Plays sound from path
 fn play_audio(path: &String, volume: f64) {
     let (mut manager, _) = awedio::start().unwrap();
-        let (audio, _) = awedio::sounds::open_file(path).unwrap()
+        let (audio, mut controller) = awedio::sounds::open_file(path).unwrap()
             .with_adjustable_volume_of(volume as f32)
             .pausable()
             .controllable();
         
+    controller.set_volume(volume as f32);
     manager.play(Box::new(audio));
+    thread::sleep(Duration::from_secs(10));
 }
 
 
