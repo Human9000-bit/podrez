@@ -35,19 +35,20 @@ async fn download_files(path: &Path, url: &str) {
     for i in urls.as_slice() {
         hadles.push(download_and_write(i, path))
     }
-    join_all(hadles).await;
+    join_all(hadles).await; //spawns all async handles and executes in one time 
 }
 
-async fn download_and_write(i: &str, path: &Path) {
+///Downloads file from url and writes into the path
+async fn download_and_write(url: &str, path: &Path) {
     let mut resp = Vec::new();
-    get(i).call().expect("failed to download mp3").into_reader().read_to_end(&mut resp).expect("failed to convert");
-    let parts: Vec<&str> = i.split('/').collect();
+    get(url).call().expect("failed to download mp3").into_reader().read_to_end(&mut resp).expect("failed to convert");
+    let parts: Vec<&str> = url.split('/').collect();
     let name = parts.last().unwrap();
 
     write_file(path.to_path_buf(), name, resp.as_slice())
 }
 
-/// Parses json file and returns an array of urls
+///Parses json file and returns an array of urls
 pub fn parse_index(index: String) -> Vec<String> {
     let result = serde_json::from_str(index.as_str());
     match result {
@@ -102,6 +103,7 @@ struct JsonFromWeb {
     urls: Vec<String>,
 }
 
+/// Config structure
 pub struct Config {
     pub min_cooldown: u64,
     pub max_cooldown: u64,
@@ -109,6 +111,7 @@ pub struct Config {
 }
 
 impl Config {
+    /// Parses config from downloaded url
     pub fn from(url: &str) -> Self {
         let path = env::temp_dir().join(".sounds");
         let resp = get(url).call().inspect_err(|_e| stop_and_clear(&path))
