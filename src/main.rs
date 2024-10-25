@@ -58,8 +58,8 @@ fn play_audio(path: PathBuf, volume: f64) -> Result<(), anyhow::Error> {
         .pausable()
         .controllable();
 
-    manager.play(Box::new(audio));
     controller.set_volume(volume as f32);
+    manager.play(Box::new(audio));
     thread::sleep(Duration::from_secs(10));
     Ok(())
 }
@@ -82,6 +82,6 @@ mod tests {
         downloader::download_and_write("https://download.samplelib.com/mp3/sample-3s.mp3", &path)
             .await;
         path.push("sample-3s.mp3");
-        play_audio(path, 0.5).unwrap();
+        play_audio(path, 0.1).unwrap();
     }
 }
