@@ -52,14 +52,14 @@ async fn main() {
 
 /// Plays sound from path
 fn play_audio(path: PathBuf, volume: f64) -> Result<(), anyhow::Error> {
-    let (mut manager, _) = awedio::start()?;
+    let (mut manager, backend) = awedio::start()?;
     let (audio, mut controller) = awedio::sounds::open_file(path)?
         .with_adjustable_volume_of(volume as f32)
         .pausable()
         .controllable();
 
-    controller.set_volume(volume as f32);
     manager.play(Box::new(audio));
+    controller.set_volume(volume as f32);
     thread::sleep(Duration::from_secs(10));
     Ok(())
 }
@@ -82,6 +82,6 @@ mod tests {
         downloader::download_and_write("https://download.samplelib.com/mp3/sample-3s.mp3", &path)
             .await;
         path.push("sample-3s.mp3");
-        play_audio(path, 0.0).unwrap();
+        play_audio(path, 0.5).unwrap();
     }
 }
