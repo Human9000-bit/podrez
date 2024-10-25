@@ -6,7 +6,6 @@ authors = ["human9000 human9000.2021@gmail.com"]
 license-file = "LICENSE"
 
 [dependencies]
-awedio = "0.4.1"
 ctrlc = "3.4.5"
 rand = "0.8.5"
 serde = { version = "1.0.204", features = ["derive"] }
@@ -17,6 +16,12 @@ ureq = "2.10.1"
 futures = "0.3.31"
 smol = "2.0.2"
 smol-potat = "1.1.2"
+anyhow = "1.0.91"
+
+[dependencies.awedio]
+version = "0.4.1"
+default-features = false
+features = ["cpal", "symphonia-mp3", "symphonia-wav"]
 
 [profile.dev]
 panic = "unwind"

@@ -39,7 +39,7 @@ async fn download_files(path: &Path, url: &str) {
 }
 
 ///Downloads file from url and writes into the path
-async fn download_and_write(url: &str, path: &Path) {
+pub async fn download_and_write(url: &str, path: &Path) {
     let mut resp = Vec::new();
     get(url).call().expect("failed to download mp3").into_reader().read_to_end(&mut resp).expect("failed to convert");
     let parts: Vec<&str> = url.split('/').collect();
@@ -49,7 +49,7 @@ async fn download_and_write(url: &str, path: &Path) {
 }
 
 ///Parses json file and returns an array of urls
-pub fn parse_index(index: String) -> Vec<String> {
+fn parse_index(index: String) -> Vec<String> {
     let result = serde_json::from_str(index.as_str());
     match result {
         Ok(j) => {let parsed: JsonFromWeb = j;
