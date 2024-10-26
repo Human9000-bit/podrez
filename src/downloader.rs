@@ -11,6 +11,7 @@ use ureq::get;
 use crate::stop_and_clear;
 
 /// Hadles provided path. Returns ReadDir iter if success.
+/// 
 /// Panics if there is no files in dir
 pub async fn path_handler(path: &PathBuf, url: String) -> ReadDir {
     if !path.exists() || path.read_dir().unwrap().count() == 0 {
@@ -76,6 +77,39 @@ fn write_file(path: PathBuf, filename: &str, contents: &[u8]) {
     let _ = write(path.join(filename), contents);
 }
 
+/// Structure of the json. Must contain only array of url strings, or panics otherwise.
+#[derive(Deserialize, Serialize)]
+struct JsonFromWeb {
+    urls: Vec<String>,
+}
+
+/// Config structure
+pub struct Config {
+    pub min_cooldown: u64,
+    pub max_cooldown: u64,
+    pub volume: f64,
+}
+
+impl Config {
+    /// Parses config from downloaded url
+    pub fn from(url: &str) -> Self {
+        let path = env::temp_dir().join(".sounds");
+        let resp = get(url)
+            .call()
+            .inspect_err(|_e| stop_and_clear(&path))
+            .unwrap()
+            .into_string()
+            .inspect_err(|_e| stop_and_clear(&path))
+            .unwrap();
+        let json: Value = serde_json::from_str(&resp).unwrap();
+        Self {
+            min_cooldown: json["min_cooldown"].as_i64().unwrap_or(6) as u64,
+            max_cooldown: json["max_cooldown"].as_i64().unwrap_or(20) as u64,
+            volume: json["volume"].as_f64().unwrap_or(1.0),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::{env, io::read_to_string};
@@ -111,38 +145,5 @@ mod tests {
         );
         let contents = read_to_string(std::fs::File::open("file.txt").unwrap()).unwrap();
         assert_eq!(contents, "Hello, World!")
-    }
-}
-
-/// Structure of the json. Must contain only array of url strings, or panics otherwise.
-#[derive(Deserialize, Serialize)]
-struct JsonFromWeb {
-    urls: Vec<String>,
-}
-
-/// Config structure
-pub struct Config {
-    pub min_cooldown: u64,
-    pub max_cooldown: u64,
-    pub volume: f64,
-}
-
-impl Config {
-    /// Parses config from downloaded url
-    pub fn from(url: &str) -> Self {
-        let path = env::temp_dir().join(".sounds");
-        let resp = get(url)
-            .call()
-            .inspect_err(|_e| stop_and_clear(&path))
-            .unwrap()
-            .into_string()
-            .inspect_err(|_e| stop_and_clear(&path))
-            .unwrap();
-        let json: Value = serde_json::from_str(&resp).unwrap();
-        Self {
-            min_cooldown: json["min_cooldown"].as_i64().unwrap_or(6) as u64,
-            max_cooldown: json["max_cooldown"].as_i64().unwrap_or(20) as u64,
-            volume: json["volume"].as_f64().unwrap_or(1.0),
-        }
     }
 }
