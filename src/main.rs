@@ -14,6 +14,7 @@ async fn main() {
     let _ = ctrlc::set_handler(|| {
         stop_and_clear(&env::temp_dir().join(".sounds"));
     });
+    
     let _ = fs::remove_dir_all(&path);
     let url = env!("URL", "no url provided");
     let iter = path_handler(&path, format!("{}/index.json", url));
