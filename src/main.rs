@@ -6,13 +6,7 @@ mod downloader;
 use awedio::Sound;
 use downloader::path_handler;
 use rand::Rng;
-use std::{
-    env,
-    fs::{self, ReadDir},
-    path::PathBuf,
-    thread,
-    time::Duration,
-};
+use std::{env, fs, path::PathBuf, thread, time::Duration};
 
 #[smol_potat::main]
 async fn main() {
@@ -22,27 +16,23 @@ async fn main() {
     });
     let _ = fs::remove_dir_all(&path);
     let url = env!("URL", "no url provided");
+    let iter = path_handler(&path, format!("{}/index.json", url));
     let config = downloader::Config::from(&format!("{url}/config.json"));
-    let url = &format!("{url}/index.json");
+    let files = iter.await;
+    
+    let mut filesarr: Vec<PathBuf> = Vec::new();
+
+    files.for_each(|i| {
+        let mut path = path.clone();
+        path.push(i.unwrap().file_name().into_string().unwrap().as_str());
+        filesarr.push(path);
+    });
 
     loop {
-        let iter = path_handler(&path, url).await;
-
-        //iterating over all files in directory and picking a random sound
-        let files = ReadDir::into_iter(iter);
-
-        let mut filesarr = Vec::new();
-        for i in files {
-            let mut path = path.clone();
-            path.push(i.unwrap().file_name().into_string().unwrap().as_str());
-            filesarr.push(path);
-        }
-
         let mut rngl = rand::thread_rng();
-        thread::sleep(Duration::new(
+        thread::sleep(Duration::from_secs(
             rngl.gen_range((config.min_cooldown)..(config.max_cooldown * 60)),
-            0,
-        )); //sleeps randomly from 15 to 35 mins
+        ));
 
         println!("{:?}", filesarr);
         let num = rngl.gen_range(0..filesarr.len()); //random index
@@ -52,7 +42,7 @@ async fn main() {
 
 /// Plays sound from path
 fn play_audio(path: PathBuf, volume: f64) -> Result<(), anyhow::Error> {
-    let (mut manager, backend) = awedio::start()?;
+    let (mut manager, _backend) = awedio::start()?;
     let (audio, mut controller) = awedio::sounds::open_file(path)?
         .with_adjustable_volume_of(volume as f32)
         .pausable()

@@ -10,11 +10,11 @@ use crate::stop_and_clear;
 /// Hadles provided path. Returns ReadDir iter if success.
 /// 
 /// Panics if there is no files in dir
-pub async fn path_handler(path: &PathBuf, url: &str) -> ReadDir {
+pub async fn path_handler(path: &PathBuf, url: String) -> ReadDir {
     if !path.exists() || path.read_dir().unwrap().count() == 0 {
         println!("no files in dir, downloading...");
         let _ = fs::create_dir(path);
-        download_files(path, url).await
+        download_files(path, url.as_str()).await
     } else {println!("found mp3s in dir")}
     
     match path.read_dir() {
