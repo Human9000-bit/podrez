@@ -14,13 +14,13 @@ async fn main() {
     let _ = ctrlc::set_handler(|| {
         stop_and_clear(&env::temp_dir().join(".sounds"));
     });
-    
+
     let _ = fs::remove_dir_all(&path);
     let url = env!("URL", "no url provided");
     let iter = path_handler(&path, format!("{}/index.json", url));
     let config = downloader::Config::from(&format!("{url}/config.json"));
     let files = iter.await;
-    
+
     let mut filesarr: Vec<PathBuf> = Vec::new();
 
     files.for_each(|i| {
@@ -67,6 +67,7 @@ mod tests {
 
     use crate::{downloader, play_audio};
 
+    ///Tests that audio plays correctly
     #[smol_potat::test]
     async fn test_play_audio() {
         let mut path = env::current_dir().unwrap();

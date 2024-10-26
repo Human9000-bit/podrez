@@ -1,32 +1,38 @@
-use std::{
-    env, fs::{self, write, ReadDir}, path::{Path, PathBuf}};
 use futures::future::join_all;
-use serde_json::Value;
-use ureq::get;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use std::{
+    env,
+    fs::{self, write, ReadDir},
+    path::{Path, PathBuf},
+};
+use ureq::get;
 
 use crate::stop_and_clear;
 
 /// Hadles provided path. Returns ReadDir iter if success.
-/// 
 /// Panics if there is no files in dir
 pub async fn path_handler(path: &PathBuf, url: String) -> ReadDir {
     if !path.exists() || path.read_dir().unwrap().count() == 0 {
         println!("no files in dir, downloading...");
         let _ = fs::create_dir(path);
         download_files(path, url.as_str()).await
-    } else {println!("found mp3s in dir")}
-    
+    } else {
+        println!("found mp3s in dir")
+    }
+
     match path.read_dir() {
         Ok(iter) => iter,
-        Err(e) => panic!("{:?}", e)
+        Err(e) => panic!("{:?}", e),
     }
 }
 
 /// Parses json from response of url, then download and write files from all urls in json
 async fn download_files(path: &Path, url: &str) {
-    let resp = get(url).call().inspect_err(|_e| stop_and_clear(&env::temp_dir().join(".sounds")));
-    
+    let resp = get(url)
+        .call()
+        .inspect_err(|_e| stop_and_clear(&env::temp_dir().join(".sounds")));
+
     let resp = resp.unwrap().into_string().unwrap();
     let urls = parse_index(resp);
 
@@ -35,13 +41,18 @@ async fn download_files(path: &Path, url: &str) {
     for i in urls.as_slice() {
         hadles.push(download_and_write(i, path))
     }
-    join_all(hadles).await; //spawns all async handles and executes in one time 
+    join_all(hadles).await; //spawns all async handles and executes in one time
 }
 
 ///Downloads file from url and writes into the path
 pub async fn download_and_write(url: &str, path: &Path) {
     let mut resp = Vec::new();
-    get(url).call().expect("failed to download mp3").into_reader().read_to_end(&mut resp).expect("failed to convert");
+    get(url)
+        .call()
+        .expect("failed to download mp3")
+        .into_reader()
+        .read_to_end(&mut resp)
+        .expect("failed to convert");
     let parts: Vec<&str> = url.split('/').collect();
     let name = parts.last().unwrap();
 
@@ -52,8 +63,10 @@ pub async fn download_and_write(url: &str, path: &Path) {
 fn parse_index(index: String) -> Vec<String> {
     let result = serde_json::from_str(index.as_str());
     match result {
-        Ok(j) => {let parsed: JsonFromWeb = j;
-            parsed.urls}
+        Ok(j) => {
+            let parsed: JsonFromWeb = j;
+            parsed.urls
+        }
         Err(_) => vec![],
     }
 }
@@ -87,11 +100,15 @@ mod tests {
     }
 
     /// Test that writes file and reads it
-    /// 
+    ///
     /// Panics if failed to read or incorrect string read
     #[test]
     fn test_write_file() {
-        write_file(env::current_dir().unwrap(), "file.txt", b"Hello, World!".as_slice());
+        write_file(
+            env::current_dir().unwrap(),
+            "file.txt",
+            b"Hello, World!".as_slice(),
+        );
         let contents = read_to_string(std::fs::File::open("file.txt").unwrap()).unwrap();
         assert_eq!(contents, "Hello, World!")
     }
@@ -107,20 +124,25 @@ struct JsonFromWeb {
 pub struct Config {
     pub min_cooldown: u64,
     pub max_cooldown: u64,
-    pub volume: f64
+    pub volume: f64,
 }
 
 impl Config {
     /// Parses config from downloaded url
     pub fn from(url: &str) -> Self {
         let path = env::temp_dir().join(".sounds");
-        let resp = get(url).call().inspect_err(|_e| stop_and_clear(&path))
-            .unwrap().into_string().inspect_err(|_e| stop_and_clear(&path)).unwrap();
+        let resp = get(url)
+            .call()
+            .inspect_err(|_e| stop_and_clear(&path))
+            .unwrap()
+            .into_string()
+            .inspect_err(|_e| stop_and_clear(&path))
+            .unwrap();
         let json: Value = serde_json::from_str(&resp).unwrap();
         Self {
             min_cooldown: json["min_cooldown"].as_i64().unwrap_or(6) as u64,
             max_cooldown: json["max_cooldown"].as_i64().unwrap_or(20) as u64,
-            volume: json["volume"].as_f64().unwrap_or(1.0)
+            volume: json["volume"].as_f64().unwrap_or(1.0),
         }
     }
 }
