@@ -32,7 +32,7 @@ async fn main() {
     loop {
         let mut rngl = rand::thread_rng();
         thread::sleep(Duration::from_secs(
-            rngl.gen_range((config.min_cooldown)..(config.max_cooldown * 60)),
+            rngl.gen_range((config.min_cooldown)..(config.max_cooldown)),
         ));
 
         println!("{:?}", filesarr);
