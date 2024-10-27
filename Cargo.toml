@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2021"
 authors = ["human9000 human9000.2021@gmail.com"]
 license-file = "LICENSE"
+description = "a simple soundpad that downloads sounds from server and plays it at random time"
+readme = "README.md"
+repository = "https://github.com/Human9000-bit/podrez"
 
 [dependencies]
 ctrlc = "3.4.5"
