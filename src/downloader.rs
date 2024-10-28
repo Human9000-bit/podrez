@@ -11,7 +11,7 @@ use ureq::get;
 use crate::stop_and_clear;
 
 /// Hadles provided path. Returns ReadDir iter if success.
-/// 
+///
 /// Panics if there is no files in dir
 pub async fn path_handler(path: &PathBuf, url: String) -> ReadDir {
     if !path.exists() || path.read_dir().unwrap().count() == 0 {

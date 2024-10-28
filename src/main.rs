@@ -1,11 +1,11 @@
-#![forbid(unsafe_code)]
 #![windows_subsystem = "windows"]
 
 mod downloader;
+mod sound;
 
-use awedio::Sound;
 use downloader::path_handler;
 use rand::Rng;
+use sound::play_audio;
 use std::{env, fs, path::PathBuf, thread, time::Duration};
 
 #[smol_potat::main]
@@ -32,7 +32,10 @@ async fn main() {
     loop {
         let mut rngl = rand::thread_rng();
         thread::sleep(Duration::from_secs(
-            rngl.gen_range((config.min_cooldown)..(config.max_cooldown)),
+            match config.min_cooldown >= config.max_cooldown || config.max_cooldown == 0 {
+                true => config.min_cooldown,
+                false => rngl.gen_range(config.min_cooldown..config.max_cooldown),
+            },
         ));
 
         println!("{:?}", filesarr);
@@ -41,39 +44,8 @@ async fn main() {
     }
 }
 
-/// Plays sound from path
-fn play_audio(path: PathBuf, volume: f64) -> Result<(), anyhow::Error> {
-    let (mut manager, _backend) = awedio::start()?;
-    let (audio, mut controller) = awedio::sounds::open_file(path)?
-        .with_adjustable_volume_of(volume as f32)
-        .pausable()
-        .controllable();
-
-    controller.set_volume(volume as f32);
-    manager.play(Box::new(audio));
-    thread::sleep(Duration::from_secs(10));
-    Ok(())
-}
-
 /// Clears all files and exits
 pub fn stop_and_clear(path: &PathBuf) {
     fs::remove_dir_all(path).unwrap();
     std::process::exit(0);
-}
-
-#[cfg(test)]
-mod tests {
-    use std::env;
-
-    use crate::{downloader, play_audio};
-
-    ///Tests that audio plays correctly
-    #[smol_potat::test]
-    async fn test_play_audio() {
-        let mut path = env::current_dir().unwrap();
-        downloader::download_and_write("https://download.samplelib.com/mp3/sample-3s.mp3", &path)
-            .await;
-        path.push("sample-3s.mp3");
-        play_audio(path, 0.1).unwrap();
-    }
 }
