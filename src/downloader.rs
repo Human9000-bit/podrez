@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{
     env,
-    fs::{self, write, ReadDir},
+    fs::{self, read_dir, write, ReadDir},
     path::{Path, PathBuf},
 };
 use ureq::get;
@@ -13,28 +13,27 @@ use crate::stop_and_clear;
 /// Hadles provided path. Returns ReadDir iter if success.
 ///
 /// Panics if there is no files in dir
-pub async fn path_handler(path: &PathBuf, url: String) -> ReadDir {
-    if !path.exists() || path.read_dir().unwrap().count() == 0 {
+pub async fn path_handler(path: &PathBuf, url: String) -> Result<ReadDir, anyhow::Error> {
+    if !path.exists() || path.read_dir()?.count() == 0 {
         println!("no files in dir, downloading...");
         let _ = fs::create_dir(path);
-        download_files(path, url.as_str()).await
+        download_files(path, url.as_str()).await?
     } else {
         println!("found mp3s in dir")
     }
 
-    match path.read_dir() {
-        Ok(iter) => iter,
-        Err(e) => panic!("{:?}", e),
-    }
+    let read_dir = read_dir(path)?;
+    println!("download complete");
+    Ok(read_dir)
 }
 
 /// Parses json from response of url, then download and write files from all urls in json
-async fn download_files(path: &Path, url: &str) {
+async fn download_files(path: &Path, url: &str) -> Result<(), anyhow::Error> {
     let resp = get(url)
         .call()
         .inspect_err(|_e| stop_and_clear(&env::temp_dir().join(".sounds")));
 
-    let resp = resp.unwrap().into_string().unwrap();
+    let resp = resp?.into_string()?;
     let urls = parse_index(resp);
 
     //iterates over array or urls, download file from every url and write it.
@@ -43,21 +42,18 @@ async fn download_files(path: &Path, url: &str) {
         hadles.push(download_and_write(i, path))
     }
     join_all(hadles).await; //spawns all async handles and executes in one time
+    Ok(())
 }
 
 ///Downloads file from url and writes into the path
-pub async fn download_and_write(url: &str, path: &Path) {
+pub async fn download_and_write(url: &str, path: &Path) -> Result<(), anyhow::Error> {
     let mut resp = Vec::new();
-    get(url)
-        .call()
-        .expect("failed to download mp3")
-        .into_reader()
-        .read_to_end(&mut resp)
-        .expect("failed to convert");
+    get(url).call()?.into_reader().read_to_end(&mut resp)?;
     let parts: Vec<&str> = url.split('/').collect();
-    let name = parts.last().unwrap();
+    let name = parts.last().unwrap_or(&"file.mp3");
 
-    write_file(path.to_path_buf(), name, resp.as_slice())
+    write_file(path.to_path_buf(), name, resp.as_slice())?;
+    Ok(())
 }
 
 ///Parses json file and returns an array of urls
@@ -73,8 +69,9 @@ fn parse_index(index: String) -> Vec<String> {
 }
 
 /// creates a file with name filename in path and write contents into it
-fn write_file(path: PathBuf, filename: &str, contents: &[u8]) {
-    let _ = write(path.join(filename), contents);
+fn write_file(path: PathBuf, filename: &str, contents: &[u8]) -> Result<(), anyhow::Error> {
+    write(path.join(filename), contents)?;
+    Ok(())
 }
 
 /// Structure of the json. Must contain only array of url strings, or panics otherwise.
@@ -92,7 +89,7 @@ pub struct Config {
 
 impl Config {
     /// Parses config from downloaded url
-    pub fn from(url: &str) -> Self {
+    pub fn from(url: &str) -> Result<Self, anyhow::Error> {
         let path = env::temp_dir().join(".sounds");
         let resp = get(url)
             .call()
@@ -102,11 +99,11 @@ impl Config {
             .inspect_err(|_e| stop_and_clear(&path))
             .unwrap();
         let json: Value = serde_json::from_str(&resp).unwrap();
-        Self {
+        Ok(Self {
             min_cooldown: json["min_cooldown"].as_i64().unwrap_or(6) as u64,
             max_cooldown: json["max_cooldown"].as_i64().unwrap_or(20) as u64,
             volume: json["volume"].as_f64().unwrap_or(1.0),
-        }
+        })
     }
 }
 
@@ -142,7 +139,8 @@ mod tests {
             env::current_dir().unwrap(),
             "file.txt",
             b"Hello, World!".as_slice(),
-        );
+        )
+        .unwrap();
         let contents = read_to_string(std::fs::File::open("file.txt").unwrap()).unwrap();
         assert_eq!(contents, "Hello, World!")
     }

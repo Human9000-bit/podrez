@@ -9,7 +9,7 @@ use sound::play_audio;
 use std::{env, fs, path::PathBuf, thread, time::Duration};
 
 #[smol_potat::main]
-async fn main() {
+async fn main() -> Result<(), anyhow::Error> {
     let path = env::temp_dir().join(".sounds/"); // the path of sounds dir.
     let _ = ctrlc::set_handler(|| {
         stop_and_clear(&env::temp_dir().join(".sounds"));
@@ -17,9 +17,10 @@ async fn main() {
 
     let _ = fs::remove_dir_all(&path);
     let url = env!("URL", "no url provided");
+    if url.is_empty() {panic!("invalid url")}
     let iter = path_handler(&path, format!("{}/index.json", url));
-    let config = downloader::Config::from(&format!("{url}/config.json"));
-    let files = iter.await;
+    let config = downloader::Config::from(&format!("{url}/config.json"))?;
+    let files = iter.await?;
 
     let mut filesarr: Vec<PathBuf> = Vec::new();
 
@@ -40,12 +41,12 @@ async fn main() {
 
         println!("{:?}", filesarr);
         let num = rngl.gen_range(0..filesarr.len()); //random index
-        let _ = play_audio(filesarr[num].clone(), config.volume);
+        play_audio(filesarr[num].clone(), config.volume)?;
     }
 }
 
 /// Clears all files and exits
 pub fn stop_and_clear(path: &PathBuf) {
-    fs::remove_dir_all(path).unwrap();
+    let _ = fs::remove_dir_all(path);
     std::process::exit(0);
 }
