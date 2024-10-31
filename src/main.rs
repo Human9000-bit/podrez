@@ -40,7 +40,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
         let num = rngl.gen_range(0..filesarr.len()); //random index
         println!("playing: {:?}", filesarr[num]);
-        play_audio(filesarr[num].clone(), config.volume)?;
+        play_audio(filesarr[num].clone(), config.volume).await?;
     }
 }
 

@@ -37,13 +37,10 @@ async fn download_files(path: &Path, url: &str) -> Result<(), anyhow::Error> {
         .inspect_err(|_e| stop_and_clear(&env::temp_dir().join(".sounds")));
 
     let resp = resp?.into_string()?;
-    let urls = parse_index(resp);
+    let urls = parse_index(resp).unwrap();
 
     //iterates over array or urls, download file from every url and write it.
-    let mut hadles = vec![];
-    for i in urls.as_slice() {
-        hadles.push(download_and_write(i, path))
-    }
+    let hadles = urls.iter().map(|i| download_and_write(i, path));
     join_all(hadles).await; //spawns all async handles and executes in one time
     Ok(())
 }
@@ -61,14 +58,14 @@ pub async fn download_and_write(url: &str, path: &Path) -> Result<(), anyhow::Er
 }
 
 ///Parses json file and returns an array of urls
-fn parse_index(index: String) -> Vec<String> {
+fn parse_index(index: String) -> Option<Vec<String>> {
     let result = serde_json::from_str(index.as_str());
     match result {
         Ok(j) => {
             let parsed: JsonFromWeb = j;
-            parsed.urls
+            Some(parsed.urls)
         }
-        Err(_) => vec![],
+        Err(_) => None,
     }
 }
 
@@ -104,8 +101,8 @@ impl Config {
             .unwrap();
         let json: Value = serde_json::from_str(&resp).unwrap();
         Ok(Self {
-            min_cooldown: json["min_cooldown"].as_i64().unwrap_or(6) as u64,
-            max_cooldown: json["max_cooldown"].as_i64().unwrap_or(20) as u64,
+            min_cooldown: json["min_cooldown"].as_i64().unwrap_or(60) as u64,
+            max_cooldown: json["max_cooldown"].as_i64().unwrap_or(600) as u64,
             volume: json["volume"].as_f64().unwrap_or(1.0),
         })
     }
@@ -118,27 +115,27 @@ mod tests {
     use super::*;
 
     /// Test that parses example.com from index
-    #[test]
-    fn test_json() {
+    #[smol_potat::test]
+    async fn test_json() {
         let index = String::from("{\"urls\": [\"http://example.com/\"]}");
-        let parsed = parse_index(index);
+        let parsed = parse_index(index).unwrap();
         println!("{:?}", parsed);
         assert_eq!("http://example.com/", parsed[0])
     }
 
     /// Test that parses empty string
-    #[test]
-    fn test_parse_index_empty() {
+    #[smol_potat::test]
+    async fn test_parse_index_empty() {
         let index = String::new();
         let parsed = parse_index(index);
-        assert!(parsed.is_empty())
+        assert_eq!(parsed, None)
     }
 
     /// Test that writes file and reads it
     ///
     /// Panics if failed to read or incorrect string read
-    #[test]
-    fn test_write_file() {
+    #[smol_potat::test]
+    async fn test_write_file() {
         write_file(
             env::current_dir().unwrap(),
             "file.txt",

@@ -3,7 +3,7 @@ use std::thread;
 use std::{path::PathBuf, time::Duration};
 
 /// Plays sound from path
-pub fn play_audio(path: PathBuf, volume: f64) -> Result<(), anyhow::Error> {
+pub async fn play_audio(path: PathBuf, volume: f64) -> Result<(), anyhow::Error> {
     let (mut manager, _backend) = awedio::start()?;
 
     let (audio, _controller) = awedio::sounds::open_file(path)?
@@ -65,6 +65,6 @@ mod tests {
             .await
             .unwrap();
         path.push("sample-3s.mp3");
-        play_audio(path, 0.1).unwrap();
+        play_audio(path, 0.1).await.unwrap();
     }
 }
