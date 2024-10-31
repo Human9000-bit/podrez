@@ -22,10 +22,12 @@ async fn main() -> Result<(), anyhow::Error> {
         panic!("invalid url")
     }
     let iter = path_handler(&path, format!("{}/index.json", url));
-    let config = downloader::Config::from(&format!("{url}/config.json"))?;
+    let config = downloader::Config::from(format!("{url}/config.json"));
+    
     let files = iter.await?;
-
     let filesarr: Vec<PathBuf> = files.map(|i| i.unwrap().path()).collect();
+    
+    let config = config.await?;
 
     loop {
         let mut rngl = rand::thread_rng();

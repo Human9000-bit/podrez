@@ -54,7 +54,7 @@ pub async fn download_and_write(url: &str, path: &Path) -> Result<(), anyhow::Er
     get(url).call()?.into_reader().read_to_end(&mut resp)?;
     let parts: Vec<&str> = url.split('/').collect();
     let name = parts.last().unwrap_or(&"file.mp3");
-    println!("donwloaded {name}");
+    println!("downloaded {name}");
 
     write_file(path.to_path_buf(), name, resp.as_slice())?;
     Ok(())
@@ -93,9 +93,9 @@ pub struct Config {
 
 impl Config {
     /// Parses config from downloaded url
-    pub fn from(url: &str) -> Result<Self, anyhow::Error> {
+    pub async fn from(url: String) -> Result<Self, anyhow::Error> {
         let path = env::temp_dir().join(".sounds");
-        let resp = get(url)
+        let resp = get(url.as_str())
             .call()
             .inspect_err(|_e| stop_and_clear(&path))
             .unwrap()
