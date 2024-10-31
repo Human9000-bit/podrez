@@ -17,7 +17,9 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let _ = fs::remove_dir_all(&path);
     let url = env!("URL", "no url provided");
-    if url.is_empty() {panic!("invalid url")}
+    if url.is_empty() {
+        panic!("invalid url")
+    }
     let iter = path_handler(&path, format!("{}/index.json", url));
     let config = downloader::Config::from(&format!("{url}/config.json"))?;
     let files = iter.await?;
