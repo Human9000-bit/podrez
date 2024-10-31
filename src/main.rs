@@ -15,7 +15,8 @@ async fn main() -> Result<(), anyhow::Error> {
         stop_and_clear(&env::temp_dir().join(".sounds"));
     });
 
-    let _ = fs::remove_dir_all(&path);
+    println!("{:?}", path);
+    
     let url = env!("URL", "no url provided");
     if url.is_empty() {
         panic!("invalid url")
@@ -41,8 +42,8 @@ async fn main() -> Result<(), anyhow::Error> {
             },
         ));
 
-        println!("{:?}", filesarr);
         let num = rngl.gen_range(0..filesarr.len()); //random index
+        println!("playing: {:?}", filesarr[num]);
         play_audio(filesarr[num].clone(), config.volume)?;
     }
 }

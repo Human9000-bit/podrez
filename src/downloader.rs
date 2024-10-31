@@ -54,6 +54,7 @@ pub async fn download_and_write(url: &str, path: &Path) -> Result<(), anyhow::Er
     get(url).call()?.into_reader().read_to_end(&mut resp)?;
     let parts: Vec<&str> = url.split('/').collect();
     let name = parts.last().unwrap_or(&"file.mp3");
+    println!("donwloaded {name}");
 
     write_file(path.to_path_buf(), name, resp.as_slice())?;
     Ok(())
