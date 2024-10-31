@@ -14,7 +14,7 @@ use crate::stop_and_clear;
 ///
 /// Panics if there is no files in dir
 pub async fn path_handler(path: &PathBuf, url: String) -> Result<ReadDir, anyhow::Error> {
-    match path.exists() || path.read_dir()?.count() == 0 {
+    match !path.exists() || path.read_dir()?.count() == 0 {
         true => {
             println!("no files in dir, downloading...");
             let _ = fs::create_dir(path);

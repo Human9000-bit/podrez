@@ -10,13 +10,13 @@ use std::{env, fs, path::PathBuf, thread, time::Duration};
 
 #[smol_potat::main]
 async fn main() -> Result<(), anyhow::Error> {
-    let path = env::temp_dir().join(".sounds/"); // the path of sounds dir.
+    let path = env::temp_dir().join(".sounds"); // the path of sounds dir.
     let _ = ctrlc::set_handler(|| {
         stop_and_clear(&env::temp_dir().join(".sounds"));
     });
 
     println!("{:?}", path);
-    
+
     let url = env!("URL", "no url provided");
     if url.is_empty() {
         panic!("invalid url")
@@ -25,13 +25,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let config = downloader::Config::from(&format!("{url}/config.json"))?;
     let files = iter.await?;
 
-    let mut filesarr: Vec<PathBuf> = Vec::new();
-
-    files.for_each(|i| {
-        let mut path = path.clone();
-        path.push(i.unwrap().file_name().into_string().unwrap().as_str());
-        filesarr.push(path);
-    });
+    let filesarr: Vec<PathBuf> = files.map(|i| i.unwrap().path()).collect();
 
     loop {
         let mut rngl = rand::thread_rng();
