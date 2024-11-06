@@ -34,7 +34,7 @@ pub async fn path_handler(path: &PathBuf, url: String) -> Result<ReadDir, anyhow
 async fn download_files(path: &Path, url: &str) -> Result<(), anyhow::Error> {
     let resp = get(url)
         .call()
-        .inspect_err(|_e| stop_and_clear(&env::temp_dir().join(".sounds")));
+        .inspect_err(|_| stop_and_clear(&env::temp_dir().join(".sounds")));
 
     let resp = resp?.into_string()?;
     let urls = parse_index(resp).unwrap();
