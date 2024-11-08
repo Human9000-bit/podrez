@@ -3,22 +3,24 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{
     env,
-    fs::{self, read_dir, write, ReadDir},
     path::{Path, PathBuf},
+    fs::read_dir
 };
 use ureq::get;
+use smol::fs::{self, write};
 
 use crate::stop_and_clear;
 
 /// Hadles provided path. Returns ReadDir iter if success.
 ///
 /// Panics if there is no files in dir
-pub async fn path_handler(path: &PathBuf, url: String) -> Result<ReadDir, anyhow::Error> {
+pub async fn path_handler(path: &PathBuf, url: String) -> Result<std::fs::ReadDir, anyhow::Error> {
     match !path.exists() || path.read_dir()?.count() == 0 {
         true => {
             println!("no files in dir, downloading...");
-            let _ = fs::create_dir(path);
+            let _ = fs::create_dir(path).await;
             download_files(path, url.as_str()).await?;
+            println!("download complete");
         }
         false => {
             println!("found mp3s in dir")
@@ -26,18 +28,21 @@ pub async fn path_handler(path: &PathBuf, url: String) -> Result<ReadDir, anyhow
     }
 
     let read_dir = read_dir(path)?;
-    println!("download complete");
     Ok(read_dir)
 }
 
 /// Parses json from response of url, then download and write files from all urls in json
 async fn download_files(path: &Path, url: &str) -> Result<(), anyhow::Error> {
     let resp = get(url)
-        .call()
-        .inspect_err(|_| stop_and_clear(&env::temp_dir().join(".sounds")));
+        .call();
+    
+    let resp = match resp {
+        Ok(r) => r,
+        Err(_) => get(url).call()?
+    };
 
-    let resp = resp?.into_string()?;
-    let urls = parse_index(resp).unwrap();
+    let resp = resp.into_string()?;
+    let urls = parse_index(resp).await.unwrap();
 
     //iterates over array or urls, download file from every url and write it.
     let hadles = urls.iter().map(|i| download_and_write(i, path));
@@ -53,12 +58,12 @@ pub async fn download_and_write(url: &str, path: &Path) -> Result<(), anyhow::Er
     let name = parts.last().unwrap_or(&"file.mp3");
     println!("downloaded {name}");
 
-    write_file(path.to_path_buf(), name, resp.as_slice())?;
+    write_file(path.to_path_buf(), name, resp.as_slice()).await?;
     Ok(())
 }
 
 ///Parses json file and returns an array of urls
-fn parse_index(index: String) -> Option<Vec<String>> {
+async fn parse_index(index: String) -> Option<Vec<String>> {
     let result = serde_json::from_str(index.as_str());
     match result {
         Ok(j) => {
@@ -70,8 +75,8 @@ fn parse_index(index: String) -> Option<Vec<String>> {
 }
 
 /// creates a file with name filename in path and write contents into it
-fn write_file(path: PathBuf, filename: &str, contents: &[u8]) -> Result<(), anyhow::Error> {
-    write(path.join(filename), contents)?;
+async fn write_file(path: PathBuf, filename: &str, contents: &[u8]) -> Result<(), anyhow::Error> {
+    write(path.join(filename), contents).await?;
     Ok(())
 }
 
@@ -118,7 +123,7 @@ mod tests {
     #[smol_potat::test]
     async fn test_json() {
         let index = String::from("{\"urls\": [\"http://example.com/\"]}");
-        let parsed = parse_index(index).unwrap();
+        let parsed = parse_index(index).await.unwrap();
         println!("{:?}", parsed);
         assert_eq!("http://example.com/", parsed[0])
     }
@@ -127,7 +132,7 @@ mod tests {
     #[smol_potat::test]
     async fn test_parse_index_empty() {
         let index = String::new();
-        let parsed = parse_index(index);
+        let parsed = parse_index(index).await;
         assert_eq!(parsed, None)
     }
 
@@ -141,7 +146,7 @@ mod tests {
             "file.txt",
             b"Hello, World!".as_slice(),
         )
-        .unwrap();
+        .await.unwrap();
         let contents = read_to_string(std::fs::File::open("file.txt").unwrap()).unwrap();
         assert_eq!(contents, "Hello, World!")
     }

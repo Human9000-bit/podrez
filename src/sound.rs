@@ -11,7 +11,7 @@ pub async fn play_audio(path: PathBuf, volume: f64) -> Result<(), anyhow::Error>
         .controllable();
 
     #[cfg(target_os = "windows")]
-    {
+    unsafe {
         set_win_volume(volume)?
     }
 
@@ -30,10 +30,7 @@ unsafe fn set_win_volume(volume: f64) -> Result<(), anyhow::Error> {
     use windows::Win32::System::Com::*;
 
     CoUninitialize();
-    match CoInitialize(None) {
-        S_OK => (),
-        _ => Err(()),
-    };
+    CoInitialize(None)?;
 
     let devicenum: IMMDeviceEnumerator =
         CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_INPROC_SERVER)?;
