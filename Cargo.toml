@@ -12,8 +12,8 @@ repository = "https://github.com/Human9000-bit/podrez"
 #async
 futures = "0.3.31"
 smol = "2.0.2"
-smol-potat = {version = "1.1.2", features = ["auto"]}
-async-std = {version = "1.13.0", features = ["attributes"]}
+smol-potat = { version = "1.1.2", features = ["auto"] }
+async-std = { version = "1.13.0", features = ["attributes"] }
 
 ctrlc = "3.4.5"
 rand = "0.8.5"
@@ -23,7 +23,14 @@ ureq = "2.10.1"
 anyhow = "1.0.91"
 
 [target.'cfg(windows)'.dependencies]
-windows = { version = "0.58.0", features = ["Win32", "Win32_System", "Win32_Media", "Win32_Media_Audio", "Win32_Media_Audio_Endpoints", "Win32_System_Com"] }
+windows = { version = "0.58.0", features = [
+    "Win32",
+    "Win32_System",
+    "Win32_Media",
+    "Win32_Media_Audio",
+    "Win32_Media_Audio_Endpoints",
+    "Win32_System_Com",
+] }
 
 [dependencies.awedio]
 version = "0.4.1"

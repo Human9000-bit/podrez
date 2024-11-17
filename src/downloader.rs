@@ -103,9 +103,11 @@ mod tests {
     /// Test that parses example.com from index
     #[smol_potat::test]
     async fn test_json() {
-        let index = String::from(r#"{
+        let index = String::from(
+            r#"{
             "urls": ["http://example.com/"]
-            }"#);
+            }"#,
+        );
         let parsed = parse_index(index).await.unwrap().urls;
         println!("{:?}", parsed);
         assert_eq!("http://example.com/", parsed[0])

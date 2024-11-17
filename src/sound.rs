@@ -61,13 +61,13 @@ mod tests {
         path.push("sample-3s.mp3");
         play_audio(path, 0.1).await.unwrap();
     }
-    
+
     #[cfg(target_os = "windows")]
     #[async_std::test]
     async fn test_win() {
         unsafe {
-        use windows::Win32::System::Com::CoInitialize;
-        CoInitialize(None).unwrap();
+            use windows::Win32::System::Com::CoInitialize;
+            CoInitialize(None).unwrap();
         }
     }
 }
