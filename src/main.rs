@@ -8,7 +8,7 @@ use rand::Rng;
 use sound::play_audio;
 use std::{env, fs, path::PathBuf, thread, time::Duration};
 
-#[smol_potat::main]
+#[async_std::main]
 async fn main() -> Result<(), anyhow::Error> {
     let path = env::temp_dir().join(".sounds"); // the path of sounds dir.
     let _ = ctrlc::set_handler(|| {
@@ -22,7 +22,7 @@ async fn main() -> Result<(), anyhow::Error> {
         panic!("invalid url")
     }
     let iter = path_handler(&path, format!("{}/index.json", url));
-    let config = downloader::Config::from(format!("{url}/config.json"));
+    let config = downloader::Config::from_url(format!("{url}/config.json"));
     
     let files = iter.await?;
     let filesarr: Vec<PathBuf> = files.map(|i| i.unwrap().path()).collect();

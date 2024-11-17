@@ -1,5 +1,4 @@
 use awedio::Sound;
-use std::thread;
 use std::{path::PathBuf, time::Duration};
 
 /// Plays sound from path
@@ -16,7 +15,7 @@ pub async fn play_audio(path: PathBuf, volume: f64) -> Result<(), anyhow::Error>
     }
 
     manager.play(Box::new(audio));
-    thread::sleep(Duration::from_secs(10));
+    async_std::task::sleep(Duration::from_secs(10)).await;
     Ok(())
 }
 
@@ -24,13 +23,11 @@ pub async fn play_audio(path: PathBuf, volume: f64) -> Result<(), anyhow::Error>
 #[cfg(target_os = "windows")]
 unsafe fn set_win_volume(volume: f64) -> Result<(), anyhow::Error> {
     use windows::core::GUID;
-    use windows::Win32::Foundation::S_OK;
     use windows::Win32::Media::Audio::Endpoints::IAudioEndpointVolume;
     use windows::Win32::Media::Audio::*;
     use windows::Win32::System::Com::*;
 
     CoUninitialize();
-    CoInitialize(None)?;
 
     let devicenum: IMMDeviceEnumerator =
         CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_INPROC_SERVER)?;
@@ -39,12 +36,12 @@ unsafe fn set_win_volume(volume: f64) -> Result<(), anyhow::Error> {
 
     let endpointval: IAudioEndpointVolume = defaultdevice.Activate(CLSCTX_INPROC_SERVER, None)?;
 
-    match vol {
+    match volume {
         0.0 => endpointval.SetMute(true, 0 as *const GUID)?,
         _ => endpointval.SetMute(false, 0 as *const GUID)?,
     }
 
-    endpointval.SetMasterVolumeLevelScalar(vol, 0 as *const GUID)?;
+    endpointval.SetMasterVolumeLevelScalar(volume as f32, 0 as *const GUID)?;
     Ok(())
 }
 
@@ -55,7 +52,7 @@ mod tests {
     use std::env;
 
     ///Tests that checks if audio plays correctly
-    #[smol_potat::test]
+    #[async_std::test]
     async fn test_play_audio() {
         let mut path = env::current_dir().unwrap();
         downloader::download_and_write("https://download.samplelib.com/mp3/sample-3s.mp3", &path)
@@ -63,5 +60,11 @@ mod tests {
             .unwrap();
         path.push("sample-3s.mp3");
         play_audio(path, 0.1).await.unwrap();
+    }
+    
+    #[cfg(target_os = "windows")]
+    #[async_std::test]
+    async fn test_win() {
+        CoInitialize(None)?;
     }
 }
