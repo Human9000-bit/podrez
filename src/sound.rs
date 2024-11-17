@@ -37,11 +37,11 @@ unsafe fn set_win_volume(volume: f64) -> Result<(), anyhow::Error> {
     let endpointval: IAudioEndpointVolume = defaultdevice.Activate(CLSCTX_INPROC_SERVER, None)?;
 
     match volume {
-        0.0 => endpointval.SetMute(true, 0 as *const GUID)?,
-        _ => endpointval.SetMute(false, 0 as *const GUID)?,
+        0.0 => endpointval.SetMute(true, std::ptr::null::<GUID>())?,
+        _ => endpointval.SetMute(false, std::ptr::null::<GUID>())?,
     }
 
-    endpointval.SetMasterVolumeLevelScalar(volume as f32, 0 as *const GUID)?;
+    endpointval.SetMasterVolumeLevelScalar(volume as f32, std::ptr::null::<GUID>())?;
     Ok(())
 }
 
