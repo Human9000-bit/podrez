@@ -65,6 +65,7 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[async_std::test]
     async fn test_win() {
+        use windows::Win32::System::Com::CoUninitialize;
         CoInitialize(None)?;
     }
 }
