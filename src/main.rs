@@ -8,6 +8,8 @@ use rand::Rng;
 use sound::play_audio;
 use std::{env, fs, path::PathBuf, thread, time::Duration};
 
+const URL: &str = env!("URL", "no url provided");
+
 #[async_std::main]
 async fn main() -> Result<(), anyhow::Error> {
     let path = env::temp_dir().join(".sounds"); // the path of sounds dir.
@@ -16,19 +18,23 @@ async fn main() -> Result<(), anyhow::Error> {
     });
 
     println!("{:?}", path);
-
-    let url = env!("URL", "no url provided");
-    if url.is_empty() {
-        panic!("invalid url")
-    }
-    let iter = path_handler(&path, format!("{}/index.json", url));
-    let config = downloader::Config::from_url(format!("{url}/config.json"));
+    
+    let iter = path_handler(&path, format!("{}/index.json", URL));
+    let config = downloader::Config::from_url(format!("{URL}/config.json"));
 
     let files = iter.await?;
     let filesarr: Vec<PathBuf> = files.map(|i| i.unwrap().path()).collect();
 
     let config = config.await?;
+    
+    main_loop(config, filesarr).await;
+    
+    stop_and_clear(&path);
+    
+    Ok(())
+}
 
+async fn main_loop(config: downloader::Config, filesarr: Vec<PathBuf>) {
     loop {
         let mut rngl = rand::thread_rng();
         thread::sleep(Duration::from_secs(
@@ -40,7 +46,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
         let num = rngl.gen_range(0..filesarr.len()); //random index
         println!("playing: {:?}", filesarr[num]);
-        play_audio(filesarr[num].clone(), config.volume).await?;
+        let _ = play_audio(filesarr[num].clone(), config.volume).await;
     }
 }
 

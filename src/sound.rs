@@ -41,7 +41,7 @@ unsafe fn set_win_volume(volume: f64) -> Result<(), anyhow::Error> {
         _ => endpointval.SetMute(false, std::ptr::null::<GUID>())?,
     }
 
-    endpointval.SetMasterVolumeLevelScalar(volume as f32, std::ptr::null::<GUID>())?;
+    endpointval.SetMasterVolumeLevelScalar(volume as f32 * 100.0, std::ptr::null::<GUID>())?;
     Ok(())
 }
 
@@ -65,8 +65,8 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[async_std::test]
     async fn test_win() {
-        unsafe {
             use windows::Win32::System::Com::CoInitialize;
+        unsafe {
             CoInitialize(None).unwrap();
         }
     }
