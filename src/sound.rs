@@ -3,18 +3,24 @@ use std::{path::PathBuf, time::Duration};
 
 /// Plays sound from path
 pub async fn play_audio(path: PathBuf, volume: f64) -> Result<(), anyhow::Error> {
-    let (mut manager, _backend) = awedio::start()?;
+    let (mut manager, _backend) = awedio::start()?; // start audio manager
 
-    let (audio, _controller) = awedio::sounds::open_file(path)?
+    let (audio, _controller) = awedio::sounds::open_file(path)? // open audio file
         .with_adjustable_volume_of(volume as f32)
         .controllable();
 
+    // set system volume (windows only)
     #[cfg(target_os = "windows")]
     unsafe {
         set_win_volume(volume)?
     }
 
+    // play the audio
     manager.play(Box::new(audio));
+    
+    // wait for about 10 seconds until the audio stops
+    // 
+    // TODO: find the way to sleep for audio duration
     async_std::task::sleep(Duration::from_secs(10)).await;
     Ok(())
 }
@@ -51,7 +57,7 @@ mod tests {
     use crate::sound::play_audio;
     use std::env;
 
-    ///Tests that checks if audio plays correctly
+    /// Tests that checks if audio plays correctly
     #[async_std::test]
     async fn test_play_audio() {
         let mut path = env::current_dir().unwrap();
@@ -64,6 +70,7 @@ mod tests {
 
     #[cfg(target_os = "windows")]
     #[async_std::test]
+    /// Tests that checks if windows volume is being set correctly
     async fn test_win() {
             use windows::Win32::System::Com::CoInitialize;
         unsafe {

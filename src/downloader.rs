@@ -2,12 +2,12 @@ use anyhow::Ok;
 use anyhow::{Context, Result};
 use futures::future::join_all;
 use serde::Deserialize;
-use smol::fs::{self, write};
 use std::{
     fs::read_dir,
     path::{Path, PathBuf},
 };
 use ureq::get;
+use async_std::fs::{self, write};
 
 /// Hadles provided path. Returns ReadDir iter if success.
 ///
@@ -45,13 +45,13 @@ async fn download_files(path: &Path, url: &str) -> Result<(), anyhow::Error> {
         .context("failed to convert response to string")?;
     let urls = parse_index(resp).await.unwrap();
 
-    //iterates over array or urls, download file from every url and write it.
+    // iterates over array or urls, download file from every url and write it.
     let handles = urls.urls.iter().map(|i| download_and_write(i, path));
-    join_all(handles).await; //spawns all async handles and executes in one time
+    join_all(handles).await; // spawns all async handles and executes in one time
     Ok(())
 }
 
-///Downloads file from url and writes into the path
+/// Downloads file from url and writes into the path
 pub async fn download_and_write(url: &str, path: &Path) -> Result<(), anyhow::Error> {
     let mut resp = Vec::new();
     get(url)
@@ -71,13 +71,13 @@ pub async fn download_and_write(url: &str, path: &Path) -> Result<(), anyhow::Er
     Ok(())
 }
 
-///Parses json file and returns an array of urls
+/// Parses json file and returns an array of urls
 async fn parse_index(index: String) -> Option<JsonFromWeb> {
     let result: Result<JsonFromWeb, _> = serde_json::from_str(index.as_str());
     result.ok()
 }
 
-/// creates a file with name filename in path and write contents into it
+/// Creates a file with name filename in path and writes contents into it
 async fn write_file(path: PathBuf, filename: &str, contents: &[u8]) -> Result<(), anyhow::Error> {
     write(path.join(filename), contents)
         .await
@@ -85,8 +85,7 @@ async fn write_file(path: PathBuf, filename: &str, contents: &[u8]) -> Result<()
     Ok(())
 }
 
-/// Structure of the json. Must contain only array of url strings
-/// Panics if json is invalid
+/// JSON structure with array of links to mp3s
 #[derive(Deserialize, Clone)]
 struct JsonFromWeb {
     urls: Vec<String>,
@@ -95,8 +94,13 @@ struct JsonFromWeb {
 /// Config structure
 #[derive(Clone, Copy, Debug, Deserialize)]
 pub struct Config {
+    /// Minimal cooldown in seconds
     pub min_cooldown: u64,
+    /// Maximal cooldown in seconds
     pub max_cooldown: u64,
+    /// Volume of the audio
+    /// 
+    /// Ranges from 0.0 to 1.0
     pub volume: f64,
 }
 
@@ -141,8 +145,6 @@ mod tests {
     }
 
     /// Test that writes file and reads it
-    ///
-    /// Panics if failed to read or incorrect string read
     #[async_std::test]
     async fn test_write_file() {
         write_file(
